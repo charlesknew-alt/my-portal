@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Absolute Living — My Property Portal</title>
+  
+  <!-- Favicon: purple circle with AL -->
+  <script>
+  (function(){
+    var c = document.createElement('canvas');
+    c.width = 32; c.height = 32;
+    var x = c.getContext('2d');
+    x.beginPath(); x.arc(16,16,16,0,2*Math.PI); x.fillStyle='#6B2D5B'; x.fill();
+    x.fillStyle='#fff'; x.font='bold 15px Arial'; x.textAlign='center'; x.textBaseline='middle';
+    x.fillText('AL',16,17);
+    var l = document.createElement('link');
+    l.rel='icon'; l.type='image/png'; l.href=c.toDataURL();
+    document.head.appendChild(l);
+  })();
+  </script>
+  
+  <style>
+    * { margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; background: #F5EEF3; }
+    iframe { width: 100%; height: 100%; border: none; }
+    
+    /* Loading screen while iframe loads */
+    #loader {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 10;
+      background: #F5EEF3;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      transition: opacity 0.4s ease;
+    }
+    #loader.hidden { opacity: 0; pointer-events: none; }
+    .loader-logo {
+      width: 56px; height: 56px; border-radius: 14px; background: #6B2D5B;
+      display: flex; align-items: center; justify-content: center;
+      font-family: Arial, sans-serif; font-size: 22px; font-weight: 700; color: #fff;
+      margin-bottom: 16px;
+    }
+    .loader-text { font-family: Arial, sans-serif; font-size: 14px; color: #6B2D5B; }
+    .loader-spinner {
+      width: 24px; height: 24px; border: 3px solid #E8D5E3; border-top-color: #6B2D5B;
+      border-radius: 50%; animation: spin 0.8s linear infinite; margin-top: 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    
+    /* Error state */
+    .error-msg {
+      display: none; margin-top: 20px; padding: 16px 24px; background: #fff;
+      border-radius: 8px; border-left: 4px solid #CC0000; font-family: Arial, sans-serif;
+      font-size: 13px; color: #555; max-width: 400px; text-align: left;
+    }
+    .error-msg strong { color: #CC0000; }
+  </style>
+</head>
+<body>
+  <!-- Loading screen -->
+  <div id="loader">
+    <div class="loader-logo">AL</div>
+    <div class="loader-text">Absolute Living — Loading your portal...</div>
+    <div class="loader-spinner"></div>
+    <div class="error-msg" id="errorMsg">
+      <strong>Unable to load portal</strong><br>
+      Please check your link is correct or contact<br>
+      <a href="mailto:freeholds@absoluteliving.co.uk" style="color:#6B2D5B;">freeholds@absoluteliving.co.uk</a>
+    </div>
+  </div>
+  
+  <iframe id="portal" src=""></iframe>
+
+  <script>
+    var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwYpyIhDppONLPCCjlsmHwSOJy4vOWc0EhWaQqPS6tqyf_ytjVmqYOvJSmwMsQtOJel/exec';
+    
+    // Pass through query parameters (?portal=TOKEN)
+    var params = window.location.search;
+    
+    // If no token provided, show error
+    if (!params || params.indexOf('portal=') === -1) {
+      document.getElementById('loader').querySelector('.loader-spinner').style.display = 'none';
+      document.getElementById('loader').querySelector('.loader-text').textContent = 'Absolute Living — Property Portal';
+      document.getElementById('errorMsg').innerHTML = '<strong>No access token provided</strong><br><br>' +
+        'Please use the link from your portal invitation email.<br><br>' +
+        'If you need help, contact <a href="mailto:freeholds@absoluteliving.co.uk" style="color:#6B2D5B;">freeholds@absoluteliving.co.uk</a>';
+      document.getElementById('errorMsg').style.display = 'block';
+    } else {
+      // Load the portal with the token
+      document.getElementById('portal').src = APPS_SCRIPT_URL + params;
+      
+      // Hide loader when iframe is ready
+      document.getElementById('portal').addEventListener('load', function() {
+        setTimeout(function() {
+          document.getElementById('loader').classList.add('hidden');
+        }, 300);
+      });
+      
+      // Fallback: hide loader after 8 seconds regardless
+      setTimeout(function() {
+        document.getElementById('loader').classList.add('hidden');
+      }, 8000);
+    }
+    
+    // Listen for postMessage from Apps Script (for any navigation/communication)
+    window.addEventListener('message', function(event) {
+      try {
+        var data = event.data;
+        if (typeof data === 'string') data = JSON.parse(data);
+        
+        if (data.type === 'portalReady') {
+          document.getElementById('loader').classList.add('hidden');
+        }
+        if (data.type === 'navigate') {
+          window.location.href = data.url;
+        }
+      } catch(e) {}
+    });
+  </script>
+</body>
+</html>
